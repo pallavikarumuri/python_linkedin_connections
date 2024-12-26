@@ -40,8 +40,8 @@ except Exception as e:
 time.sleep(2)
 
 # Set environment variables (for testing purposes only)
-os.environ["LINKEDIN_USERNAME"] = "kalyanitists22@gmail.com"
-os.environ["LINKEDIN_PASSWORD"] = "Kalyani@22"
+os.environ["LINKEDIN_USERNAME"] = "your example mail id@gmail.com"
+os.environ["LINKEDIN_PASSWORD"] = "your password"
 
 # Get username and password from environment variables
 username = os.getenv("LINKEDIN_USERNAME")
