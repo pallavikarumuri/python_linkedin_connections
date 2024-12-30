@@ -1,13 +1,14 @@
-
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from fpdf import FPDF
+from fpdf import FPDF, HTMLMixin
 import time
 import chromedriver_autoinstaller
 import os
+import re
+
 # Automatically install chromedriver
 chromedriver_autoinstaller.install(True)
 
@@ -40,8 +41,8 @@ except Exception as e:
 time.sleep(2)
 
 # Set environment variables (for testing purposes only)
-os.environ["LINKEDIN_USERNAME"] = "your example mail id@gmail.com"
-os.environ["LINKEDIN_PASSWORD"] = "your password"
+os.environ["LINKEDIN_USERNAME"] = "user mail id@gmail.com"
+os.environ["LINKEDIN_PASSWORD"] = "user password"
 
 # Get username and password from environment variables
 username = os.getenv("LINKEDIN_USERNAME")
@@ -67,7 +68,7 @@ except Exception as e:
 time.sleep(5)
 
 # Open LinkedIn search page with query
-search_query = "data scientist"
+search_query = "data science"
 try:
     driver.get(f"https://www.linkedin.com/search/results/people/?keywords={search_query}")
 except Exception as e:
@@ -131,8 +132,10 @@ def send_connection_requests(driver, num_requests):
 # Send connection requests
 send_connection_requests(driver, 10)
 
+# # Quit the driver
+# driver.quit()
 
-# Navigate to the "My Network" page
+#Navigate to the "My Network" page
 driver.get("https://www.linkedin.com/mynetwork/invite-connect/connections/")
 
 # Allow time for the page to load
@@ -152,19 +155,28 @@ while True:
 
 # Retrieve all connections
 connections = driver.find_elements(By.XPATH, "//div[@class='mn-connection-card__details']")
-connections_list = [
-    {
-        'name': conn.find_element(By.XPATH, ".//span[@class='mn-connection-card__name t-16 t-black t-bold']").text,
-        'details': conn.find_element(By.XPATH, ".//span[@class='mn-connection-card__occupation t-14 t-black--light t-normal']").text
-    }
-    for conn in connections
-]
+connections_list = []
+for conn in connections:
+    try:
+        name = conn.find_element(By.XPATH, ".//span[@class='mn-connection-card__name t-16 t-black t-bold']").text
+        details = conn.find_element(By.XPATH, ".//span[@class='mn-connection-card__occupation t-14 t-black--light t-normal']").text
+        connections_list.append({'name': name, 'details': details})
+    except Exception as e:
+        print(f"Error retrieving connection details: {e}")
 
 # Close the driver
 driver.quit()
 
-# Create PDF
-pdf = FPDF()
+# Define a class for PDF generation with HTML support
+class PDF(FPDF, HTMLMixin):
+    pass
+
+# Function to remove unsupported characters
+def remove_unsupported_characters(text):
+    return re.sub(r'[^\x00-\x7F]+', '', text)
+
+# Create PDF with filtered text
+pdf = PDF()
 pdf.add_page()
 pdf.set_font("Arial", size=12)
 
@@ -172,13 +184,17 @@ pdf.cell(200, 10, txt="LinkedIn Connections", ln=True, align="C")
 pdf.ln(10)
 
 for conn in connections_list:
-    pdf.cell(200, 10, txt=f"Name: {conn['name']}", ln=True)
-    pdf.cell(200, 10, txt=f"Details: {conn['details']}", ln=True)
+    name = remove_unsupported_characters(conn['name'])
+    details = remove_unsupported_characters(conn['details'])
+    pdf.cell(200, 10, txt=f"Name: {name}", ln=True)
+    pdf.cell(200, 10, txt=f"Details: {details}", ln=True)
     pdf.ln(5)
 
 pdf.output("LinkedIn_Connections.pdf")
 
 print("PDF created successfully.")
+
+
 
 
 
